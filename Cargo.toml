@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Stallmanifold <stallmanifold@gmail.com>"]
 
 [dependencies]
+glfw = "0.21.0"
+
