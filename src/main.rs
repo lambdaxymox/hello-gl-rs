@@ -1,12 +1,14 @@
 extern crate glfw;
 extern crate gl;
 
+mod util;
+
 use glfw::{Action, Context, Key};
 use gl::types::{
     GLsizeiptr, GLenum, GLuint, GLsizei, GLfloat, GLushort
 };
 use std::mem;
-
+use util;
 
 
 /*
