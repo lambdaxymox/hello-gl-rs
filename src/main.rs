@@ -39,7 +39,25 @@ fn render(window: &mut glfw::Window) {
     window.swap_buffers();
 }
 
-fn make_buffer(target: GLenum, buffer_data: &mut [GLfloat]) -> GLuint {
+fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
+    let mut buffer = 0;
+    let buffer_size = (buffer_data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr;
+
+    unsafe {
+        gl::GenBuffers(1, &mut buffer);
+        gl::BindBuffer(target, buffer);
+        gl::BufferData(
+            target,
+            buffer_size,
+            mem::transmute(&buffer_data[0]),
+            gl::STATIC_DRAW
+        );
+    }
+
+    buffer
+}
+
+fn make_buffer_glushort(target: GLenum, buffer_data: &[GLushort]) -> GLuint {
     let mut buffer = 0;
     let buffer_size = (buffer_data.len() * mem::size_of::<GLfloat>()) as GLsizeiptr;
 
@@ -58,7 +76,14 @@ fn make_buffer(target: GLenum, buffer_data: &mut [GLfloat]) -> GLuint {
 }
 
 fn make_resources() {
-
+    let vertex_buffer = make_buffer_glfloat(
+        gl::ARRAY_BUFFER,
+        &G_VERTEX_BUFFER_DATA
+    );
+    let element_buffer = make_buffer_glushort(
+        gl::ELEMENT_ARRAY_BUFFER,
+        &G_ELEMENT_BUFFER_DATA
+    );
 }
 
 fn main() {
