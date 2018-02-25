@@ -84,7 +84,14 @@ fn make_resources() {
         gl::ELEMENT_ARRAY_BUFFER,
         &G_ELEMENT_BUFFER_DATA
     );
+    // Make textures and shaders.
 }
+
+fn make_texture() -> GLuint {
+    // Make texture.
+    return 0;
+}
+
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
