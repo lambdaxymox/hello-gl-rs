@@ -1,5 +1,6 @@
 extern crate glfw;
 extern crate gl;
+extern crate tga;
 
 mod util;
 
@@ -8,13 +9,12 @@ use gl::types::{
     GLsizeiptr, GLenum, GLuint, GLsizei, GLfloat, GLushort
 };
 use std::mem;
-use util;
 
 
 /*
  *  Data used to seed our vertex array and element array buffers.
  */
-const G_VERTEX_BUFFER_DATA: [GLfloat ; 8] = [
+const G_VERTEX_BUFFER_DATA: [GLfloat; 8] = [
     -1.0, -1.0,
      1.0, -1.0,
     -1.0,  1.0,
