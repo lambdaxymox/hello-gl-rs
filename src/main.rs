@@ -273,7 +273,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
 
 fn update(g_resources: &mut GResources) {
     let milliseconds = Glfw::get_timer_value();
-    g_resources.fade_factor = 0.5 * f32::sin(0.00005 * (milliseconds as f32)) + 0.5;
+    g_resources.fade_factor = 0.5 * f32::sin(0.000025 * (milliseconds as f32)) + 0.5;
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
