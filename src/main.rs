@@ -174,7 +174,9 @@ fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     }
 }
 
-fn make_resources(vertex_shader_file: &str) -> Option<GResources> {
+fn make_resources(
+    vertex_shader_file: &str, fragment_shader_file: &str
+) -> Option<GResources> {
     // Make buffers.
     let vertex_buffer = make_buffer_glfloat(
         gl::ARRAY_BUFFER,
@@ -200,7 +202,7 @@ fn make_resources(vertex_shader_file: &str) -> Option<GResources> {
         return None;
     }
 
-    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, G_DEFAULT_FRAGMENT_SHADER);
+    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, fragment_shader_file);
     if fragment_shader == 0 {
         return None;
     }
@@ -284,6 +286,13 @@ fn update_timer(glfw: &Glfw, g_resources: &mut GResources) {
     g_resources.timer = 1.1 * time as f32;
 }
 
+fn update(glfw: &mut Glfw, g_resources: &mut GResources) {
+    update_timer(&glfw, g_resources);
+
+    // Poll for and process events
+    glfw.poll_events();
+}
+
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
@@ -297,6 +306,10 @@ fn main() {
     let mut args = env::args().collect::<Vec<String>>();
     if args.len() < 2 {
         args.push(String::from(G_DEFAULT_VERTEX_SHADER));
+    }
+
+    if args.len() < 3 {
+        args.push(String::from(G_DEFAULT_FRAGMENT_SHADER));
     }
 
     // Initialize our resources.
@@ -313,15 +326,12 @@ fn main() {
     // Load the OpenGl function pointers.
     gl::load_with(|symbol| { window.get_proc_address(symbol) as *const _ });
 
-    let mut g_resources = make_resources(&args[1]).expect("Failed to load resources.");
+    let mut g_resources = make_resources(&args[1], &args[2]).expect("Failed to load resources.");
 
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
-        update_timer(&glfw, &mut g_resources);
-
-        // Poll for and process events
-        glfw.poll_events();
+        update(&mut glfw, &mut g_resources);
 
         for (_, event) in glfw::flush_messages(&events) {
             println!("{:?}", event);
