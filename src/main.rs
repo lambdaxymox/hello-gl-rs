@@ -6,10 +6,28 @@ mod util;
 
 use glfw::{Action, Context, Key};
 use gl::types::{
-    GLsizeiptr, GLenum, GLuint, GLsizei, GLfloat, GLushort
+    GLsizeiptr, GLenum, GLuint, GLint, GLsizei, GLfloat, GLushort
 };
 use std::mem;
 
+
+struct Uniforms {
+    fade_factor: GLint,
+    textures: [GLint; 2],
+}
+
+struct Attributes {
+    position: GLint,
+}
+
+struct GResources {
+    vertex_buffer: GLuint,
+    element_buffer: GLuint,
+    textures: [GLuint; 2],
+    uniforms: Uniforms,
+    attributes: Attributes,
+    fade_factor: GLfloat,
+}
 
 /*
  *  Data used to seed our vertex array and element array buffers.
@@ -77,7 +95,8 @@ fn make_buffer_glushort(target: GLenum, buffer_data: &[GLushort]) -> GLuint {
     buffer
 }
 
-fn make_resources() {
+fn make_resources() -> Option<GResources> {
+    // Make buffers.
     let vertex_buffer = make_buffer_glfloat(
         gl::ARRAY_BUFFER,
         &G_VERTEX_BUFFER_DATA
@@ -86,12 +105,41 @@ fn make_resources() {
         gl::ELEMENT_ARRAY_BUFFER,
         &G_ELEMENT_BUFFER_DATA
     );
-    // Make textures and shaders.
+    // Make textures.
+    let mut textures = [0; 2];
+    textures[0] = make_texture("assets/hello1.tga");
+    textures[1] = make_texture("assets/hello2.tga");
+
+    if textures[0] == 0 || textures[1] == 0 {
+        return None;
+    }
+    // Make shaders.
+    None
 }
 
-fn make_texture() -> GLuint {
-    // Make texture.
-    return 0;
+fn make_texture(filename: &str) -> GLuint {
+    let (pixels, height, width) = match util::read_tga(filename) {
+        Ok(tuple) => tuple,
+        Err(_) => return 0,
+    };
+    let mut texture = 0;
+    unsafe {
+        gl::GenTextures(1, &mut texture);
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
+        gl::TexImage2D(
+            gl::TEXTURE_2D, 0,
+            gl::RGB8 as i32,
+            width as i32, height as i32, 0,
+            gl::BGR, gl::UNSIGNED_BYTE,
+            pixels
+        );
+    }
+
+    texture
 }
 
 
