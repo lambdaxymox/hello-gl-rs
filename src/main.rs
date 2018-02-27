@@ -160,7 +160,7 @@ fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut shader_ok);
     
         if shader_ok == 0 {
-            eprintln!("Failed to compile {}\n", filename);
+            eprintln!("Failed to compile {}", filename);
             // BEGIN show_info_log.
             let mut log_length = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut log_length);
@@ -175,6 +175,33 @@ fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
     }
     
     shader
+}
+
+fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
+    let mut program_ok: GLint = 0;
+    unsafe {
+        let program = gl::CreateProgram();
+        gl::AttachShader(program, vertex_shader);
+        gl::AttachShader(program, fragment_shader);
+        gl::LinkProgram(program);
+        gl::GetProgramiv(program, gl::LINK_STATUS, &mut program_ok);
+
+        if program_ok == 0 {
+            eprintln!("Failed to link shader program:");
+            // BEGIN show_info_log.
+            let mut log_length = 0;
+            gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut log_length);
+            let log: Vec<i8> = Vec::with_capacity(log_length as usize);
+            gl::GetShaderInfoLog(program, log_length, &mut 0, log.as_ptr() as *mut i8);
+            eprintln!("{:?}", log);
+            // END show_info_log.
+            gl::DeleteProgram(program);
+
+            return 0;
+        }
+
+        program
+    }
 }
 
 
