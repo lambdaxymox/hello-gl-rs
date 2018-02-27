@@ -11,10 +11,26 @@ use gl::types::{
 use std::mem;
 use std::ffi::CString;
 use std::ptr;
+use std::env;
 
+
+/*
+ *  Data used to seed our vertex array and element array buffers.
+ */
+const G_VERTEX_BUFFER_DATA: [GLfloat; 16] = [
+    -1.0, -1.0, 0.0, 1.0,
+     1.0, -1.0, 0.0, 1.0,
+    -1.0,  1.0, 0.0, 1.0,
+     1.0,  1.0, 0.0, 1.0
+];
+
+const G_ELEMENT_BUFFER_DATA: [GLushort; 4] = [0, 1, 2, 3];
+
+const G_DEFAULT_VERTEX_SHADER: &str = "src/shaders/hello-gl.vertex.glsl";
+const G_DEFAULT_FRAGMENT_SHADER: &str = "src/shaders/hello-gl.fragment.glsl";
 
 struct Uniforms {
-    fade_factor: GLint,
+    timer: GLint,
     textures: [GLint; 2],
 }
 
@@ -29,7 +45,7 @@ struct GResources {
     textures: [GLuint; 2],
     uniforms: Uniforms,
     attributes: Attributes,
-    fade_factor: GLfloat,
+    timer: GLfloat,
 }
 
 impl GResources {
@@ -37,17 +53,6 @@ impl GResources {
 
     }
 }
-/*
- *  Data used to seed our vertex array and element array buffers.
- */
-const G_VERTEX_BUFFER_DATA: [GLfloat; 8] = [
-    -1.0, -1.0,
-     1.0, -1.0,
-    -1.0,  1.0,
-     1.0,  1.0
-];
-
-const G_ELEMENT_BUFFER_DATA: [GLushort; 4] = [0, 1, 2, 3];
 
 
 fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
@@ -169,7 +174,7 @@ fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     }
 }
 
-fn make_resources() -> Option<GResources> {
+fn make_resources(vertex_shader_file: &str) -> Option<GResources> {
     // Make buffers.
     let vertex_buffer = make_buffer_glfloat(
         gl::ARRAY_BUFFER,
@@ -190,12 +195,12 @@ fn make_resources() -> Option<GResources> {
     }
 
     // Make shaders.
-    let vertex_shader = make_shader(gl::VERTEX_SHADER, "src/shaders/hello-gl.vertex.glsl");
+    let vertex_shader = make_shader(gl::VERTEX_SHADER, vertex_shader_file);
     if vertex_shader == 0 {
         return None;
     }
 
-    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "src/shaders/hello-gl.fragment.glsl");
+    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, G_DEFAULT_FRAGMENT_SHADER);
     if fragment_shader == 0 {
         return None;
     }
@@ -205,11 +210,11 @@ fn make_resources() -> Option<GResources> {
         return None;
     }
     
-    let fade_factor_cstr = CString::new("fade_factor").unwrap();
+    let timer_cstr = CString::new("timer").unwrap();
     let textures_0_cstr = CString::new("textures[0]").unwrap();
     let textures_1_cstr = CString::new("textures[1]").unwrap();
     let uniforms = unsafe { Uniforms {
-        fade_factor: gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()),
+        timer: gl::GetUniformLocation(program, timer_cstr.as_ptr()),
         textures: [
             gl::GetUniformLocation(program, textures_0_cstr.as_ptr()),
             gl::GetUniformLocation(program, textures_1_cstr.as_ptr()),
@@ -221,7 +226,7 @@ fn make_resources() -> Option<GResources> {
         position: gl::GetAttribLocation(program, position_cstr.as_ptr()),
     }};
 
-    let fade_factor = 0.0;
+    let timer = 0.0;
 
     Some(GResources {
         vertex_buffer: vertex_buffer,
@@ -230,14 +235,17 @@ fn make_resources() -> Option<GResources> {
         textures: textures,
         uniforms: uniforms,
         attributes: attributes,
-        fade_factor: fade_factor,
+        timer: timer,
     })
 }
 
 fn render(window: &mut glfw::Window, g_resources: &GResources) {
     unsafe {
+        gl::ClearColor(0.1, 0.1, 0.1, 1.0);
+        gl::Clear(gl::COLOR_BUFFER_BIT);
+
         gl::UseProgram(g_resources.program);
-        gl::Uniform1f(g_resources.uniforms.fade_factor, g_resources.fade_factor);
+        gl::Uniform1f(g_resources.uniforms.timer, g_resources.timer);
         
         gl::ActiveTexture(gl::TEXTURE0);
         gl::BindTexture(gl::TEXTURE_2D, g_resources.textures[0]);
@@ -250,10 +258,10 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
         gl::BindBuffer(gl::ARRAY_BUFFER, g_resources.vertex_buffer);
         gl::VertexAttribPointer(
             g_resources.attributes.position as GLuint,
-            2,
+            4,
             gl::FLOAT,
             gl::FALSE,
-            (2 * mem::size_of::<GLfloat>()) as GLint,
+            (4 * mem::size_of::<GLfloat>()) as GLint,
             ptr::null()
         );
         gl::EnableVertexAttribArray(g_resources.attributes.position as GLuint);
@@ -271,9 +279,9 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
     window.swap_buffers();
 }
 
-fn update(g_resources: &mut GResources) {
-    let milliseconds = Glfw::get_timer_value();
-    g_resources.fade_factor = 0.5 * f32::sin(0.000025 * (milliseconds as f32)) + 0.5;
+fn update_timer(glfw: &Glfw, g_resources: &mut GResources) {
+    let time = glfw.get_time();
+    g_resources.timer = 1.1 * time as f32;
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
@@ -286,6 +294,11 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
 }
 
 fn main() {
+    let mut args = env::args().collect::<Vec<String>>();
+    if args.len() < 2 {
+        args.push(String::from(G_DEFAULT_VERTEX_SHADER));
+    }
+
     // Initialize our resources.
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
@@ -300,12 +313,12 @@ fn main() {
     // Load the OpenGl function pointers.
     gl::load_with(|symbol| { window.get_proc_address(symbol) as *const _ });
 
-    let mut g_resources = make_resources().unwrap();
+    let mut g_resources = make_resources(&args[1]).expect("Failed to load resources.");
 
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
-        update(&mut g_resources);
+        update_timer(&glfw, &mut g_resources);
 
         // Poll for and process events
         glfw.poll_events();
