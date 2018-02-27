@@ -24,6 +24,7 @@ struct Attributes {
 struct GResources {
     vertex_buffer: GLuint,
     element_buffer: GLuint,
+    program: GLuint,
     textures: [GLuint; 2],
     uniforms: Uniforms,
     attributes: Attributes,
@@ -51,14 +52,7 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     }
 }
 
-fn render(window: &mut glfw::Window) {
-    unsafe {    
-        gl::ClearColor(0.0, 0.0, 0.0, 0.0);
-        gl::Clear(gl::COLOR_BUFFER_BIT);
-    }
-    // Swap front and back buffers
-    window.swap_buffers();
-}
+
 
 
 fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
@@ -153,6 +147,7 @@ fn make_resources() -> Option<GResources> {
     Some(GResources {
         vertex_buffer: vertex_buffer,
         element_buffer: element_buffer,
+        program: program,
         textures: textures,
         uniforms: uniforms,
         attributes: attributes,
@@ -246,6 +241,9 @@ fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     }
 }
 
+fn render(g_resources: &GResources) {
+    gl::UseProgram(g_resources.program);
+}
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
