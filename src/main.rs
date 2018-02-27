@@ -208,20 +208,20 @@ fn make_resources() -> Option<GResources> {
     let fade_factor_cstr = CString::new("fade_factor").unwrap();
     let textures_0_cstr = CString::new("textures[0]").unwrap();
     let textures_1_cstr = CString::new("textures[1]").unwrap();
-    let uniforms = Uniforms {
-        fade_factor: unsafe { gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()) },
+    let uniforms = unsafe { Uniforms {
+        fade_factor: gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()),
         textures: [
-            unsafe { gl::GetUniformLocation(program, textures_0_cstr.as_ptr()) },
-            unsafe { gl::GetUniformLocation(program, textures_1_cstr.as_ptr()) },
+            gl::GetUniformLocation(program, textures_0_cstr.as_ptr()),
+            gl::GetUniformLocation(program, textures_1_cstr.as_ptr()),
         ],
-    };
+    }};
 
     let position_cstr = CString::new("position").unwrap();
-    let attributes = Attributes {
-        position: unsafe { gl::GetAttribLocation(program, position_cstr.as_ptr()) },
-    };
+    let attributes = unsafe { Attributes {
+        position: gl::GetAttribLocation(program, position_cstr.as_ptr()),
+    }};
 
-    let fade_factor = 0.5;
+    let fade_factor = 0.0;
 
     Some(GResources {
         vertex_buffer: vertex_buffer,
@@ -270,7 +270,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
     window.swap_buffers();
 }
 
-fn update_scene(g_resources: &mut GResources) {
+fn update(g_resources: &mut GResources) {
     let milliseconds = Glfw::get_timer_value();
     g_resources.fade_factor = 0.5 * f32::sin(0.00005 * (milliseconds as f32)) + 0.5;
 }
@@ -304,9 +304,8 @@ fn main() {
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
-        update_scene(&mut g_resources);
-        
-        println!("{}", g_resources.fade_factor);
+        update(&mut g_resources);
+
         // Poll for and process events
         glfw.poll_events();
 
