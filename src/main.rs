@@ -10,6 +10,7 @@ use gl::types::{
 };
 use std::mem;
 use std::ffi::CString;
+use std::os::raw;
 
 
 struct Uniforms {
@@ -89,70 +90,6 @@ fn make_buffer_glushort(target: GLenum, buffer_data: &[GLushort]) -> GLuint {
     }
 
     buffer
-}
-
-fn make_resources() -> Option<GResources> {
-    // Make buffers.
-    let vertex_buffer = make_buffer_glfloat(
-        gl::ARRAY_BUFFER,
-        &G_VERTEX_BUFFER_DATA
-    );
-    let element_buffer = make_buffer_glushort(
-        gl::ELEMENT_ARRAY_BUFFER,
-        &G_ELEMENT_BUFFER_DATA
-    );
-    // Make textures.
-    let mut textures = [0; 2];
-    textures[0] = make_texture("assets/hello1.tga");
-    textures[1] = make_texture("assets/hello2.tga");
-
-    if textures[0] == 0 || textures[1] == 0 {
-        return None;
-    }
-
-    // Make shaders.
-    let vertex_shader = make_shader(gl::VERTEX_SHADER, "hello-gl.vertex.glsl");
-    if vertex_shader == 0 {
-        return None;
-    }
-
-    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "hello-gl.fragment.glsl");
-    if fragment_shader == 0 {
-        return None;
-    }
-
-    let program = make_program(vertex_shader, fragment_shader);
-    if program == 0 {
-        return None;
-    }
-
-    let fade_factor_cstr = CString::new("fade_factor").unwrap();
-    let textures_0_cstr = CString::new("textures[0]").unwrap();
-    let textures_1_cstr = CString::new("textures[1]").unwrap();
-    let uniforms = Uniforms {
-        fade_factor: unsafe { gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()) },
-        textures: [
-            unsafe { gl::GetUniformLocation(program, textures_0_cstr.as_ptr()) },
-            unsafe { gl::GetUniformLocation(program, textures_1_cstr.as_ptr()) },
-        ],
-    };
-
-    let position_cstr = CString::new("position").unwrap();
-    let attributes = Attributes {
-        position: unsafe { gl::GetAttribLocation(program, position_cstr.as_ptr()) },
-    };
-
-    let fade_factor = 0.0;
-
-    Some(GResources {
-        vertex_buffer: vertex_buffer,
-        element_buffer: element_buffer,
-        program: program,
-        textures: textures,
-        uniforms: uniforms,
-        attributes: attributes,
-        fade_factor: fade_factor,
-    })
 }
 
 fn make_texture(filename: &str) -> GLuint {
@@ -241,11 +178,109 @@ fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {
     }
 }
 
-fn render(g_resources: &GResources) {
-    gl::UseProgram(g_resources.program);
+fn make_resources() -> Option<GResources> {
+    // Make buffers.
+    let vertex_buffer = make_buffer_glfloat(
+        gl::ARRAY_BUFFER,
+        &G_VERTEX_BUFFER_DATA
+    );
+    let element_buffer = make_buffer_glushort(
+        gl::ELEMENT_ARRAY_BUFFER,
+        &G_ELEMENT_BUFFER_DATA
+    );
+    // Make textures.
+    let mut textures = [0; 2];
+    textures[0] = make_texture("assets/hello1.tga");
+    textures[1] = make_texture("assets/hello2.tga");
+
+    if textures[0] == 0 || textures[1] == 0 {
+        return None;
+    }
+
+    // Make shaders.
+    let vertex_shader = make_shader(gl::VERTEX_SHADER, "hello-gl.vertex.glsl");
+    if vertex_shader == 0 {
+        return None;
+    }
+
+    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "hello-gl.fragment.glsl");
+    if fragment_shader == 0 {
+        return None;
+    }
+
+    let program = make_program(vertex_shader, fragment_shader);
+    if program == 0 {
+        return None;
+    }
+
+    let fade_factor_cstr = CString::new("fade_factor").unwrap();
+    let textures_0_cstr = CString::new("textures[0]").unwrap();
+    let textures_1_cstr = CString::new("textures[1]").unwrap();
+    let uniforms = Uniforms {
+        fade_factor: unsafe { gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()) },
+        textures: [
+            unsafe { gl::GetUniformLocation(program, textures_0_cstr.as_ptr()) },
+            unsafe { gl::GetUniformLocation(program, textures_1_cstr.as_ptr()) },
+        ],
+    };
+
+    let position_cstr = CString::new("position").unwrap();
+    let attributes = Attributes {
+        position: unsafe { gl::GetAttribLocation(program, position_cstr.as_ptr()) },
+    };
+
+    let fade_factor = 0.0;
+
+    Some(GResources {
+        vertex_buffer: vertex_buffer,
+        element_buffer: element_buffer,
+        program: program,
+        textures: textures,
+        uniforms: uniforms,
+        attributes: attributes,
+        fade_factor: fade_factor,
+    })
+}
+
+fn render(window: &mut glfw::Window, g_resources: &GResources) {
+    unsafe {
+        gl::UseProgram(g_resources.program);
+        gl::Uniform1f(g_resources.uniforms.fade_factor, g_resources.fade_factor);
+        gl::ActiveTexture(gl::TEXTURE0);
+        gl::BindTexture(gl::TEXTURE_2D, g_resources.textures[0]);
+        gl::Uniform1i(g_resources.uniforms.textures[0], 0);
+
+        gl::ActiveTexture(gl::TEXTURE1);
+        gl::BindTexture(gl::TEXTURE_2D, g_resources.textures[1]);
+        gl::Uniform1i(g_resources.uniforms.textures[1], 1);
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, g_resources.vertex_buffer);
+        gl::VertexAttribPointer(
+            g_resources.attributes.position as GLuint,
+            2,
+            gl::FLOAT,
+            gl::FALSE,
+            (mem::size_of::<GLfloat>() * 2) as GLint,
+            0 as *const raw::c_void
+        );
+        gl::EnableVertexAttribArray(g_resources.attributes.position as GLuint);
+
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, g_resources.element_buffer);
+        gl::DrawElements(
+            gl::TRIANGLE_STRIP,
+            4,
+            gl::UNSIGNED_SHORT,
+            0 as *const raw::c_void
+        );
+
+        gl::DisableVertexAttribArray(g_resources.attributes.position as GLuint);
+    }
+    window.swap_buffers();
 }
 
 fn main() {
+    // Initialize our resources.
+    let g_resources = make_resources().unwrap();
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
@@ -261,7 +296,7 @@ fn main() {
 
     // Loop until the user closes the window
     while !window.should_close() {
-        render(&mut window);
+        render(&mut window, &g_resources);
 
         // Poll for and process events
         glfw.poll_events();
