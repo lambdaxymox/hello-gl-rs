@@ -6,7 +6,7 @@ mod util;
 
 use glfw::{Action, Context, Key};
 use gl::types::{
-    GLsizeiptr, GLenum, GLuint, GLint, GLsizei, GLfloat, GLushort
+    GLsizeiptr, GLenum, GLuint, GLint, GLsizei, GLfloat, GLushort, GLchar
 };
 use std::mem;
 
@@ -58,6 +58,7 @@ fn render(window: &mut glfw::Window) {
     // Swap front and back buffers
     window.swap_buffers();
 }
+
 
 fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
     let mut buffer = 0;
@@ -140,6 +141,40 @@ fn make_texture(filename: &str) -> GLuint {
     }
 
     texture
+}
+
+fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
+    let (source, length) = match util::file_contents(filename) {
+        Ok(tuple) => tuple,
+        Err(_) => return 0,
+    };
+
+    let mut shader_ok = 0;
+    let length = length as i32;
+    let source_ptr = source.as_ptr() as *const *const GLchar;
+    let length_ptr = &length;
+    let shader = unsafe { gl::CreateShader(shader_type) };
+    unsafe {
+        gl::ShaderSource(shader, 1, source_ptr, length_ptr);
+        gl::CompileShader(shader);
+        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut shader_ok);
+    
+        if shader_ok == 0 {
+            eprintln!("Failed to compile {}\n", filename);
+            // BEGIN show_info_log.
+            let mut log_length = 0;
+            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut log_length);
+            let log: Vec<i8> = Vec::with_capacity(log_length as usize);
+            gl::GetShaderInfoLog(shader, log_length, &mut 0, log.as_ptr() as *mut i8);
+            eprintln!("{:?}", log);
+            // END show_info_log.
+            gl::DeleteShader(shader);
+        
+            return 0;
+        }
+    }
+    
+    shader
 }
 
 
