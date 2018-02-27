@@ -4,9 +4,9 @@ extern crate tga;
 
 mod util;
 
-use glfw::{Action, Context, Key};
+use glfw::{Glfw, Action, Context, Key};
 use gl::types::{
-    GLsizeiptr, GLenum, GLuint, GLint, GLsizei, GLfloat, GLushort, GLchar
+    GLsizeiptr, GLenum, GLuint, GLint, GLfloat, GLushort, GLchar
 };
 use std::mem;
 use std::ffi::CString;
@@ -44,6 +44,7 @@ const G_VERTEX_BUFFER_DATA: [GLfloat; 8] = [
 
 const G_ELEMENT_BUFFER_DATA: [GLushort; 4] = [0, 1, 2, 3];
 
+
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
@@ -52,8 +53,6 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
         _ => {}
     }
 }
-
-
 
 
 fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
@@ -101,14 +100,14 @@ fn make_texture(filename: &str) -> GLuint {
     unsafe {
         gl::GenTextures(1, &mut texture);
         gl::BindTexture(gl::TEXTURE_2D, texture);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
         gl::TexImage2D(
             gl::TEXTURE_2D, 0,
-            gl::RGB8 as i32,
-            width as i32, height as i32, 0,
+            gl::RGB8 as GLint,
+            width as GLint, height as GLint, 0,
             gl::BGR, gl::UNSIGNED_BYTE,
             pixels
         );
@@ -122,14 +121,17 @@ fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
         Ok(tuple) => tuple,
         Err(_) => return 0,
     };
-
+    
     let mut shader_ok = 0;
-    let length = length as i32;
+    let length = [length as GLint];
     let source_ptr = source.as_ptr() as *const *const GLchar;
-    let length_ptr = &length;
+    let length_ptr = &length as *const GLint;
     let shader = unsafe { gl::CreateShader(shader_type) };
+
     unsafe {
+        println!("Creating shader.");
         gl::ShaderSource(shader, 1, source_ptr, length_ptr);
+        println!("Shader created.");
         gl::CompileShader(shader);
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut shader_ok);
     
@@ -188,6 +190,7 @@ fn make_resources() -> Option<GResources> {
         gl::ELEMENT_ARRAY_BUFFER,
         &G_ELEMENT_BUFFER_DATA
     );
+
     // Make textures.
     let mut textures = [0; 2];
     textures[0] = make_texture("assets/hello1.tga");
@@ -197,13 +200,14 @@ fn make_resources() -> Option<GResources> {
         return None;
     }
 
+    println!("Loading vertex shader.");
     // Make shaders.
-    let vertex_shader = make_shader(gl::VERTEX_SHADER, "hello-gl.vertex.glsl");
+    let vertex_shader = make_shader(gl::VERTEX_SHADER, "src/shaders/hello-gl.vertex.glsl");
     if vertex_shader == 0 {
         return None;
     }
-
-    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "hello-gl.fragment.glsl");
+    println!("Vertex shader loaded.");
+    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "src/shaders/hello-gl.fragment.glsl");
     if fragment_shader == 0 {
         return None;
     }
@@ -212,7 +216,7 @@ fn make_resources() -> Option<GResources> {
     if program == 0 {
         return None;
     }
-
+    
     let fade_factor_cstr = CString::new("fade_factor").unwrap();
     let textures_0_cstr = CString::new("textures[0]").unwrap();
     let textures_1_cstr = CString::new("textures[1]").unwrap();
@@ -278,9 +282,13 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
     window.swap_buffers();
 }
 
+fn update_fade_factor(glfw: &Glfw, g_resources: &mut GResources) {
+    let milliseconds = glfw.get_time() as f32;
+    g_resources.fade_factor = f32::sin(milliseconds * 0.001) * 0.5 + 0.5;
+}
+
 fn main() {
     // Initialize our resources.
-    let g_resources = make_resources().unwrap();
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
@@ -294,9 +302,12 @@ fn main() {
     // Load the OpenGl function pointers.
     gl::load_with(|symbol| { window.get_proc_address(symbol) as *const _ });
 
+    let mut g_resources = make_resources().unwrap();
+
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
+        update_fade_factor(&glfw, &mut g_resources);
 
         // Poll for and process events
         glfw.poll_events();

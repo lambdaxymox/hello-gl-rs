@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Read;
 use std::io;
 use tga::TgaImage;
@@ -8,10 +7,10 @@ use std::os::raw;
 
 pub fn file_contents(filename: &str) -> io::Result<(Vec<u8>, usize)> {
     let mut file = try!(File::open(filename));
-    let mut buf_reader = BufReader::new(file);
     let mut buffer: Vec<u8> = Vec::new();
-    let length = try!(buf_reader.read_to_end(&mut buffer));
+    let length = try!(file.read_to_end(&mut buffer));
 
+    assert_eq!(buffer.len(), length);
     Ok((buffer, length))
 }
 
