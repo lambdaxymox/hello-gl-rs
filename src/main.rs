@@ -117,18 +117,17 @@ fn make_texture(filename: &str) -> GLuint {
 }
 
 fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
-    let (source, length) = match util::file_contents(filename) {
-        Ok(tuple) => tuple,
+    let source = match util::file_contents(filename) {
+        Ok(val) => val,
         Err(_) => return 0,
     };
     
     let mut shader_ok = 0;
-    let length = [length as GLint];
+    let length = [source.len() as GLint];
     let source_ptr = source.as_ptr() as *const *const GLchar;
     let length_ptr = &length as *const GLint;
-    let shader = unsafe { gl::CreateShader(shader_type) };
-
     unsafe {
+        let shader = gl::CreateShader(shader_type);
         println!("Creating shader.");
         gl::ShaderSource(shader, 1, source_ptr, length_ptr);
         println!("Shader created.");
@@ -148,9 +147,9 @@ fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
         
             return 0;
         }
+
+        shader
     }
-    
-    shader
 }
 
 fn make_program(vertex_shader: GLuint, fragment_shader: GLuint) -> GLuint {

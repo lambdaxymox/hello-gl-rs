@@ -5,13 +5,12 @@ use tga::TgaImage;
 use std::os::raw;
 
 
-pub fn file_contents(filename: &str) -> io::Result<(Vec<u8>, usize)> {
+pub fn file_contents(filename: &str) -> io::Result<Vec<u8>> {
     let mut file = try!(File::open(filename));
     let mut buffer: Vec<u8> = Vec::new();
-    let length = try!(file.read_to_end(&mut buffer));
+    try!(file.read_to_end(&mut buffer));
 
-    assert_eq!(buffer.len(), length);
-    Ok((buffer, length))
+    Ok(buffer)
 }
 
 pub fn read_tga(filename: &str) -> io::Result<(*const raw::c_void, i32, i32)> {
