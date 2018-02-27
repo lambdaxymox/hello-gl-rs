@@ -265,7 +265,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
     window.swap_buffers();
 }
 
-fn update_fade_factor(glfw: &Glfw, g_resources: &mut GResources) {
+fn update_scene(glfw: &Glfw, g_resources: &mut GResources) {
     let milliseconds = glfw.get_time() as f32;
     g_resources.fade_factor = f32::sin(milliseconds * 0.001) * 0.5 + 0.5;
 }
@@ -299,7 +299,7 @@ fn main() {
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
-        update_fade_factor(&glfw, &mut g_resources);
+        update_scene(&glfw, &mut g_resources);
 
         // Poll for and process events
         glfw.poll_events();
