@@ -1,4 +1,4 @@
-#version 110
+#version 150
 
 uniform float fade_factor;
 uniform sampler2D textures[2];
