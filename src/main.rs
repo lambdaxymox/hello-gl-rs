@@ -11,6 +11,7 @@ use gl::types::{
 use std::mem;
 use std::ffi::CString;
 use std::os::raw;
+use std::ptr;
 
 
 struct Uniforms {
@@ -121,26 +122,21 @@ fn make_shader(shader_type: GLenum, filename: &str) -> GLuint {
         Ok(val) => val,
         Err(_) => return 0,
     };
-    
-    let mut shader_ok = 0;
-    let length = [source.len() as GLint];
-    let source_ptr = source.as_ptr() as *const *const GLchar;
-    let length_ptr = &length as *const GLint;
+
     unsafe {
+        let mut shader_ok = 0;
         let shader = gl::CreateShader(shader_type);
-        println!("Creating shader.");
-        gl::ShaderSource(shader, 1, source_ptr, length_ptr);
-        println!("Shader created.");
+        gl::ShaderSource(shader, 1, &source.as_ptr(), ptr::null());
         gl::CompileShader(shader);
         gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut shader_ok);
-    
+
         if shader_ok == 0 {
             eprintln!("Failed to compile {}", filename);
             // BEGIN show_info_log.
             let mut log_length = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut log_length);
             let log: Vec<i8> = Vec::with_capacity(log_length as usize);
-            gl::GetShaderInfoLog(shader, log_length, &mut 0, log.as_ptr() as *mut i8);
+            gl::GetShaderInfoLog(shader, log_length, &mut 0, log.as_ptr() as *mut GLchar);
             eprintln!("{:?}", log);
             // END show_info_log.
             gl::DeleteShader(shader);

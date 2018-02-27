@@ -3,14 +3,16 @@ use std::io::Read;
 use std::io;
 use tga::TgaImage;
 use std::os::raw;
+use std::ffi::CString;
 
 
-pub fn file_contents(filename: &str) -> io::Result<Vec<u8>> {
+pub fn file_contents(filename: &str) -> io::Result<CString> {
     let mut file = try!(File::open(filename));
     let mut buffer: Vec<u8> = Vec::new();
     try!(file.read_to_end(&mut buffer));
+    let c_str = CString::new(buffer).unwrap();
 
-    Ok(buffer)
+    Ok(c_str)
 }
 
 pub fn read_tga(filename: &str) -> io::Result<(*const raw::c_void, i32, i32)> {
