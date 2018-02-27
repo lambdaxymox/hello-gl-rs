@@ -9,6 +9,7 @@ use gl::types::{
     GLsizeiptr, GLenum, GLuint, GLint, GLsizei, GLfloat, GLushort, GLchar
 };
 use std::mem;
+use std::ffi::CString;
 
 
 struct Uniforms {
@@ -114,8 +115,49 @@ fn make_resources() -> Option<GResources> {
     if textures[0] == 0 || textures[1] == 0 {
         return None;
     }
+
     // Make shaders.
-    None
+    let vertex_shader = make_shader(gl::VERTEX_SHADER, "hello-gl.vertex.glsl");
+    if vertex_shader == 0 {
+        return None;
+    }
+
+    let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "hello-gl.fragment.glsl");
+    if fragment_shader == 0 {
+        return None;
+    }
+
+    let program = make_program(vertex_shader, fragment_shader);
+    if program == 0 {
+        return None;
+    }
+
+    let fade_factor_cstr = CString::new("fade_factor").unwrap();
+    let textures_0_cstr = CString::new("textures[0]").unwrap();
+    let textures_1_cstr = CString::new("textures[1]").unwrap();
+    let uniforms = Uniforms {
+        fade_factor: unsafe { gl::GetUniformLocation(program, fade_factor_cstr.as_ptr()) },
+        textures: [
+            unsafe { gl::GetUniformLocation(program, textures_0_cstr.as_ptr()) },
+            unsafe { gl::GetUniformLocation(program, textures_1_cstr.as_ptr()) },
+        ],
+    };
+
+    let position_cstr = CString::new("position").unwrap();
+    let attributes = Attributes {
+        position: unsafe { gl::GetAttribLocation(program, position_cstr.as_ptr()) },
+    };
+
+    let fade_factor = 0.0;
+
+    Some(GResources {
+        vertex_buffer: vertex_buffer,
+        element_buffer: element_buffer,
+        textures: textures,
+        uniforms: uniforms,
+        attributes: attributes,
+        fade_factor: fade_factor,
+    })
 }
 
 fn make_texture(filename: &str) -> GLuint {
