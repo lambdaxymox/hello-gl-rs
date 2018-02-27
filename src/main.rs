@@ -10,7 +10,6 @@ use gl::types::{
 };
 use std::mem;
 use std::ffi::CString;
-use std::os::raw;
 use std::ptr;
 
 
@@ -44,16 +43,6 @@ const G_VERTEX_BUFFER_DATA: [GLfloat; 8] = [
 ];
 
 const G_ELEMENT_BUFFER_DATA: [GLushort; 4] = [0, 1, 2, 3];
-
-
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
-    match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
-        }
-        _ => {}
-    }
-}
 
 
 fn make_buffer_glfloat(target: GLenum, buffer_data: &[GLfloat]) -> GLuint {
@@ -195,13 +184,12 @@ fn make_resources() -> Option<GResources> {
         return None;
     }
 
-    println!("Loading vertex shader.");
     // Make shaders.
     let vertex_shader = make_shader(gl::VERTEX_SHADER, "src/shaders/hello-gl.vertex.glsl");
     if vertex_shader == 0 {
         return None;
     }
-    println!("Vertex shader loaded.");
+
     let fragment_shader = make_shader(gl::FRAGMENT_SHADER, "src/shaders/hello-gl.fragment.glsl");
     if fragment_shader == 0 {
         return None;
@@ -260,7 +248,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
             gl::FLOAT,
             gl::FALSE,
             (mem::size_of::<GLfloat>() * 2) as GLint,
-            0 as *const raw::c_void
+            ptr::null()
         );
         gl::EnableVertexAttribArray(g_resources.attributes.position as GLuint);
 
@@ -269,7 +257,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
             gl::TRIANGLE_STRIP,
             4,
             gl::UNSIGNED_SHORT,
-            0 as *const raw::c_void
+            ptr::null()
         );
 
         gl::DisableVertexAttribArray(g_resources.attributes.position as GLuint);
@@ -282,12 +270,21 @@ fn update_fade_factor(glfw: &Glfw, g_resources: &mut GResources) {
     g_resources.fade_factor = f32::sin(milliseconds * 0.001) * 0.5 + 0.5;
 }
 
+fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+    match event {
+        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
+            window.set_should_close(true)
+        }
+        _ => {}
+    }
+}
+
 fn main() {
     // Initialize our resources.
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
-    let (mut window, events) = glfw.create_window(400, 300, "Hello GL!", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(640, 480, "Hello GL!", glfw::WindowMode::Windowed)
                                    .expect("Failed to create GLFW window.");
 
     // Make the window's context current
