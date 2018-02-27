@@ -32,6 +32,11 @@ struct GResources {
     fade_factor: GLfloat,
 }
 
+impl GResources {
+    fn cleanup(&mut self) {
+
+    }
+}
 /*
  *  Data used to seed our vertex array and element array buffers.
  */
@@ -216,7 +221,7 @@ fn make_resources() -> Option<GResources> {
         position: unsafe { gl::GetAttribLocation(program, position_cstr.as_ptr()) },
     };
 
-    let fade_factor = 0.0;
+    let fade_factor = 0.5;
 
     Some(GResources {
         vertex_buffer: vertex_buffer,
@@ -247,7 +252,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
             2,
             gl::FLOAT,
             gl::FALSE,
-            (mem::size_of::<GLfloat>() * 2) as GLint,
+            (2 * mem::size_of::<GLfloat>()) as GLint,
             ptr::null()
         );
         gl::EnableVertexAttribArray(g_resources.attributes.position as GLuint);
@@ -265,9 +270,9 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
     window.swap_buffers();
 }
 
-fn update_scene(glfw: &Glfw, g_resources: &mut GResources) {
-    let milliseconds = glfw.get_time() as f32;
-    g_resources.fade_factor = f32::sin(milliseconds * 0.001) * 0.5 + 0.5;
+fn update_scene(g_resources: &mut GResources) {
+    let milliseconds = Glfw::get_timer_value();
+    g_resources.fade_factor = 0.5 * f32::sin(0.00005 * (milliseconds as f32)) + 0.5;
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
@@ -284,7 +289,7 @@ fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
-    let (mut window, events) = glfw.create_window(640, 480, "Hello GL!", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(400, 300, "Hello GL!", glfw::WindowMode::Windowed)
                                    .expect("Failed to create GLFW window.");
 
     // Make the window's context current
@@ -299,14 +304,19 @@ fn main() {
     // Loop until the user closes the window
     while !window.should_close() {
         render(&mut window, &g_resources);
-        update_scene(&glfw, &mut g_resources);
-
+        update_scene(&mut g_resources);
+        
+        println!("{}", g_resources.fade_factor);
         // Poll for and process events
         glfw.poll_events();
+
         for (_, event) in glfw::flush_messages(&events) {
             println!("{:?}", event);
             handle_window_event(&mut window, event);
         }
     }
+    
+    g_resources.cleanup();
+
 }
 
