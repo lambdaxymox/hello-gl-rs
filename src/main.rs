@@ -50,7 +50,13 @@ struct GResources {
 
 impl GResources {
     fn cleanup(&mut self) {
-
+        unsafe {
+            gl::DeleteBuffers(1, &self.vertex_buffer);
+            gl::DeleteBuffers(1, &self.element_buffer);
+            gl::DeleteProgram(self.program);
+            gl::DeleteTextures(2, self.textures.as_ptr());
+            gl::DeleteTextures(2, self.uniforms.textures.as_ptr() as *const u32);
+        }
     }
 }
 
@@ -316,7 +322,7 @@ fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
-    let (mut window, events) = glfw.create_window(640, 480, "Hello GL!", glfw::WindowMode::Windowed)
+    let (mut window, events) = glfw.create_window(400, 300, "Hello GL!", glfw::WindowMode::Windowed)
                                    .expect("Failed to create GLFW window.");
 
     // Make the window's context current
