@@ -6,4 +6,4 @@ authors = ["Stallmanifold <stallmanifold@gmail.com>"]
 [dependencies]
 glfw = "0.21.0"
 gl = "0.10.0"
-libtga = { git = "https://github.com/stallmanifold/libtga" }
+tga = { git = "https://github.com/stallmanifold/tga" }

@@ -255,7 +255,7 @@ fn render(window: &mut glfw::Window, g_resources: &GResources) {
         gl::UseProgram(g_resources.program);
 
         gl::Uniform1f(g_resources.uniforms.timer, g_resources.timer);
-        
+
         gl::ActiveTexture(gl::TEXTURE0);
         gl::BindTexture(gl::TEXTURE_2D, g_resources.textures[0]);
         gl::Uniform1i(g_resources.uniforms.textures[0], 0);
