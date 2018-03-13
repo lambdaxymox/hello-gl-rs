@@ -296,11 +296,12 @@ fn update_timer(glfw: &Glfw, g_resources: &mut GResources) {
 fn update(glfw: &mut Glfw, g_resources: &mut GResources) {
     update_timer(&glfw, g_resources);
 
-    // Poll for and process events
+    // Poll for events.
     glfw.poll_events();
 }
 
 fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
+    println!("{:?}", event);
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
@@ -319,14 +320,14 @@ fn main() {
         args.push(String::from(G_DEFAULT_FRAGMENT_SHADER));
     }
 
-    // Initialize our resources.
+    // Initialize window resources.
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
 
     // Create a windowed mode window and its OpenGL context
     let (mut window, events) = glfw.create_window(400, 300, "Hello GL!", glfw::WindowMode::Windowed)
                                    .expect("Failed to create GLFW window.");
 
-    // Make the window's context current
+    // Make the window's context current.
     window.make_current();
     window.set_key_polling(true);
 
@@ -335,13 +336,12 @@ fn main() {
 
     let mut g_resources = make_resources(&args[1], &args[2]).expect("Failed to load resources.");
 
-    // Loop until the user closes the window
+    // Loop and process events until the user closes the window.
     while !window.should_close() {
         render(&mut window, &g_resources);
         update(&mut glfw, &mut g_resources);
 
         for (_, event) in glfw::flush_messages(&events) {
-            println!("{:?}", event);
             handle_window_event(&mut window, event);
         }
     }
