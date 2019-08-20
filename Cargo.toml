@@ -1,9 +1,9 @@
 [package]
 name = "hello-gl-rs"
 version = "0.1.0"
-authors = ["Stallmanifold <stallmanifold@gmail.com>"]
+authors = ["LambdaXymox <lambda.xymox@gmail.com>"]
 
 [dependencies]
 glfw = "0.21.0"
 gl = "0.10.0"
-tga = { git = "https://github.com/stallmanifold/tga" }
+tga = { git = "https://github.com/lambdaxymox/tga" }
